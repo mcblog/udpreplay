@@ -1,0 +1,55 @@
+name: Build ARM Linux udpreplay
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+    branches:
+      - master
+
+jobs:
+  build:
+    name: Build udpreplay for ARM Linux
+    runs-on: ubuntu-latest
+
+    steps:
+    # Step 1: 检出代码
+    - name: Checkout source code
+      uses: actions/checkout@v3
+
+    # Step 2: 安装交叉编译环境和依赖
+    - name: Install dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y cmake libpcap-dev gcc-arm-linux-gnueabi g++-arm-linux-gnueabi
+
+    # Step 3: 创建构建目录并配置项目
+    - name: Configure project for ARM Linux
+      run: |
+        mkdir -p build
+        cd build
+        cmake .. \
+          -DCMAKE_SYSTEM_NAME=Linux \
+          -DCMAKE_SYSTEM_PROCESSOR=arm \
+          -DCMAKE_C_COMPILER=arm-linux-gnueabi-gcc \
+          -DCMAKE_CXX_COMPILER=arm-linux-gnueabi-g++
+
+    # Step 4: 编译项目
+    - name: Build project
+      run: |
+        cd build
+        make -j$(nproc)
+
+    # Step 5: 打包二进制文件
+    - name: Package binary
+      run: |
+        cd build
+        tar -czvf udpreplay-arm-linux.tar.gz udpreplay
+
+    # Step 6: 上传打包结果
+    - name: Upload artifact
+      uses: actions/upload-artifact@v3
+      with:
+        name: udpreplay-arm-linux
+        path: build/udpreplay-arm-linux.tar.gz
